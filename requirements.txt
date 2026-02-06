@@ -1,0 +1,21 @@
+# EasyVerein API Client
+python-easyverein>=2.3.0
+
+# ManageSieve Protocol (optional, falls Strato es unterstützt)
+sievelib>=1.4.0
+
+# Browser Automation für Strato Webmail
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# HTTP Requests (dependency of easyverein)
+httpx>=0.27.0
+
+# Logging and utilities
+colorlog>=6.8.0
+
+# Type checking (dev)
+mypy>=1.8.0
