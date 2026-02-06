@@ -10,9 +10,9 @@ from dataclasses import dataclass
 from typing import Set, Optional
 from datetime import datetime
 
-from config import SyncConfig, StratoWebmailConfig
-from easyverein_client import EasyVereinClient
-from strato_selenium import StratoSeleniumClient, StratoWebmailConfig as SeleniumConfig
+from .config import SyncConfig, StratoWebmailConfig
+from .easyverein_client import EasyVereinClient
+from .strato_selenium import StratoSeleniumClient, StratoWebmailConfig as SeleniumConfig
 
 
 @dataclass

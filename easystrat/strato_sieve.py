@@ -13,7 +13,7 @@ from sievelib.managesieve import Client as ManageSieveClient
 from sievelib.factory import FiltersSet
 from sievelib import parser
 
-from config import StratoConfig
+from .config import StratoConfig
 
 
 class SieveScriptBuilder:

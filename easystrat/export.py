@@ -11,8 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Set
 
-from config import SyncConfig
-from easyverein_client import EasyVereinClient, MemberInfo
+from .config import SyncConfig
+from .easyverein_client import EasyVereinClient, MemberInfo
 
 
 class EmailExporter:

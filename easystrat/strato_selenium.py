@@ -26,7 +26,7 @@ from selenium.common.exceptions import (
     StaleElementReferenceException
 )
 
-from config import StratoConfig
+from .config import StratoConfig
 
 
 @dataclass

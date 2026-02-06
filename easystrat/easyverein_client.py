@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from easyverein import EasyvereinAPI
 
-from config import EasyVereinConfig
+from .config import EasyVereinConfig
 
 
 @dataclass

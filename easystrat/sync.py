@@ -10,9 +10,9 @@ from dataclasses import dataclass
 from typing import Set, Optional
 from datetime import datetime
 
-from config import SyncConfig
-from easyverein_client import EasyVereinClient
-from strato_sieve import StratoSieveClient
+from .config import SyncConfig
+from .easyverein_client import EasyVereinClient
+from .strato_sieve import StratoSieveClient
 
 
 @dataclass
