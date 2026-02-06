@@ -2,11 +2,11 @@
 """
 EasyVerein-Strato E-Mail-Synchronisierung
 
-Dieses Modul dient der Abwärtskompatibilität.
+Dieses Module dient der Abwärtskompatibilität.
 Die eigentliche CLI ist in cli.py implementiert.
 
 Verwendung:
-    # Als Modul (empfohlen nach Poetry-Installation):
+    # Also Module (empfohlen nach Poetry-Installation):
     easystrat export
     easystrat compare strato.txt
     easystrat sync --apply
@@ -21,7 +21,7 @@ import sys
 def main() -> int:
     """Leitet an die Click-CLI weiter."""
     from .cli import cli
-    
+
     try:
         cli(obj={})
         return 0
@@ -31,4 +31,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

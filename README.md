@@ -7,7 +7,7 @@ Exportiert E-Mail-Adressen aktiver Mitglieder aus [EasyVerein](https://easyverei
 ```text
 ┌─────────────────┐         ┌──────────────────┐
 │   EasyVerein    │         │      Strato      │
-│  (API v2.0)     │         │   (manuell)      │
+│  (API v2.0)     │         │   (manual)      │
 │                 │         │                  │
 │  Mitglieder mit │  ──→    │  Weiterleitungs- │
 │  E-Mail-Adresse │ export  │  Liste           │
@@ -19,9 +19,9 @@ Exportiert E-Mail-Adressen aktiver Mitglieder aus [EasyVerein](https://easyverei
 
 **EasyVerein ist der Single Point of Truth:**
 
-- Exportiert werden nur aktive Mitglieder (ohne Kündigungsdatum)
+- Exportiert werden nur active Mitglieder (ohne Kündigungsdatum)
 - Das Tool zeigt genau welche E-Mails hinzugefügt/entfernt werden müssen
-- Die Änderungen in Strato werden manuell durchgeführt
+- Die Änderungen in Strato werden manual durchgeführt
 
 ## Schnellstart
 
@@ -29,13 +29,13 @@ Exportiert E-Mail-Adressen aktiver Mitglieder aus [EasyVerein](https://easyverei
 # 1. E-Mails aus EasyVerein exportieren
 easystrat export
 
-# 2. Deine aktuellen Strato-Weiterleitungen in eine Datei kopieren (z.B. strato.txt)
+# 2. Define aktuellen Strato-Weiterleitungen in eine Datei kopieren (z.B. strato.txt)
 #    Eine E-Mail pro Zeile
 
 # 3. Vergleichen und Report anzeigen
 easystrat compare strato.txt
 
-# 4. Angezeigte Änderungen manuell in Strato durchführen
+# 4. Angezeigte Änderungen manual in Strato durchführen
 ```
 
 ## Voraussetzungen
@@ -60,7 +60,7 @@ poetry install
 poetry shell
 ```
 
-### Alternativ mit pip
+### Alternative mit pip
 
 ```bash
 python3 -m venv .venv
@@ -187,7 +187,7 @@ easystrat_mail_sync/
 ### Keine E-Mail-Adressen gefunden
 
 - Mitglieder müssen eine E-Mail-Adresse in den Kontaktdaten hinterlegt haben (`privateEmail` oder `companyEmail`)
-- Nur aktive Mitglieder (ohne Kündigungsdatum) werden berücksichtigt
+- Nur active Mitglieder (ohne Kündigungsdatum) werden berücksichtigt
 - Gekündigte Mitglieder werden automatisch übersprungen
 
 ### Viele Warnungen "hat keine E-Mail-Adresse"

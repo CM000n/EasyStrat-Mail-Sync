@@ -1,7 +1,7 @@
 """
 EasyStrat Mail Sync - EasyVerein-Strato E-Mail-Synchronisierung
 
-Exportiert E-Mail-Adressen aktiver Mitglieder aus EasyVerein und 
+Exportiert E-Mail-Adressen aktiver Mitglieder aus EasyVerein und
 synchronisiert sie mit Strato E-Mail-Weiterleitungen.
 """
 

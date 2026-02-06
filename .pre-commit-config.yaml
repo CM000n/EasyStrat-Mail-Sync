@@ -1,0 +1,50 @@
+repos:
+  - repo: https://github.com/python-poetry/poetry
+    rev: 2.3.2
+    hooks:
+      - id: poetry-check
+        name: 📜 Check pyproject with Poetry
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-json
+        name: ✅ Check JSON files
+        exclude: .devcontainer
+      - id: check-toml
+        name: ✅ Check TOML files
+      - id: check-yaml
+        name: ✅ Check YAML files
+      - id: check-added-large-files
+        name: 📁 Check for large files
+      - id: debug-statements
+        name: 🐛 Check for forgotten debug statemens
+      - id: check-symlinks
+        name: 🔗 Check for broken symlinks
+      - id: check-merge-conflict
+        name: 💥 Check for merge conflicts
+      - id: end-of-file-fixer
+        name: 🔚 Fix End of Files
+      - id: trailing-whitespace
+        name: ⬜ Fix trailing whitespaces
+        exclude_types: [text]
+      - id: requirements-txt-fixer
+        name: 📝 Fix requirements.txt
+      - id: no-commit-to-branch
+        name: 🛑 Don't commit to main branch
+        args:
+          - --branch=master
+          - --branch=main
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.14
+    hooks:
+      - id: ruff
+        name: 🐶 Ruff Linter
+        args:
+          - --fix
+      - id: ruff-format
+        name: 🐶 Ruff Formatter
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        name: 🎨 Format using prettier

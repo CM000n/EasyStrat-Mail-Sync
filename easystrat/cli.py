@@ -14,7 +14,7 @@ from typing import Optional
 
 import click
 
-from .config import load_config, setup_logging, SyncConfig
+from .config import SyncConfig, load_config, setup_logging
 
 
 @click.group(invoke_without_command=True)
@@ -72,7 +72,7 @@ def cli(ctx: click.Context, debug: bool, env: Optional[Path]) -> None:
 
 
 @cli.command()
-@click.option("--csv", "csv_format", is_flag=True, help="Export als CSV mit Mitgliederdetails")
+@click.option("--csv", "csv_format", is_flag=True, help="Export also CSV mit Mitgliederdetails")
 @click.option(
     "-o",
     "--output",
@@ -179,7 +179,8 @@ def test(ctx: click.Context, strato_only: bool, no_headless: bool) -> None:
             config.strato_webmail.headless = False
 
         logger.info("Teste Strato Webmail-Verbindung...")
-        from .strato_selenium import StratoSeleniumClient, StratoWebmailConfig as SeleniumConfig
+        from .strato_selenium import StratoSeleniumClient
+        from .strato_selenium import StratoWebmailConfig as SeleniumConfig
 
         client = StratoSeleniumClient(
             SeleniumConfig(
