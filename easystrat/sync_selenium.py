@@ -117,7 +117,13 @@ class SeleniumMailSynchronizer:
 
         # E-Mails aus Strato holen
         if self.strato_client:
-            strato_emails = self.strato_client.get_forwarding_addresses()
+            # Prüfe ob individuelle Regeln verwendet werden sollen
+            if self.config.strato_webmail and self.config.strato_webmail.use_individual_rules:
+                self.logger.debug("Verwende individuellen Regel-Modus")
+                strato_emails = self.strato_client.get_managed_emails_from_rules()
+            else:
+                self.logger.debug("Verwende Legacy Single-Rule-Modus")
+                strato_emails = self.strato_client.get_forwarding_addresses()
         else:
             self.logger.warning("Kein Strato-Client konfiguriert")
             strato_emails = set()
@@ -151,6 +157,17 @@ class SeleniumMailSynchronizer:
         self.logger.info("=" * 60)
         self.logger.info("EasyVerein-Strato E-Mail-Synchronisierung (Selenium)")
         self.logger.info("=" * 60)
+
+        # Prüfe ob individuelle Regeln verwendet werden
+        use_individual = (
+            self.config.strato_webmail 
+            and self.config.strato_webmail.use_individual_rules
+        )
+        
+        if use_individual:
+            self.logger.info(f"Modus: Individuelle Regeln (Prefix: {self.config.strato_webmail.rule_prefix})")
+        else:
+            self.logger.info("Modus: Single-Rule (Legacy)")
 
         if self.config.dry_run:
             self.logger.warning("TROCKENLAUF - Keine Änderungen werden vorgenommen!")
@@ -210,62 +227,10 @@ class SeleniumMailSynchronizer:
             # Tatsächliche Änderungen durchführen
             self.logger.info("Führe Änderungen durch...")
 
-            # Öffne die Regel im Bearbeitungsmodus
-            if not self.strato_client.open_rule_for_editing():
-                return SyncResult(
-                    success=False,
-                    diff=diff,
-                    dry_run=False,
-                    error_message="Konnte Filterregel nicht zur Bearbeitung öffnen",
-                )
-
-            errors = []
-            added = 0
-            removed = 0
-
-            # Zuerst entfernen
-            for email in diff.to_remove:
-                if self.strato_client.remove_forwarding_address(email):
-                    removed += 1
-                    self.logger.info(f"✅ Entfernt: {email}")
-                else:
-                    errors.append(f"Konnte nicht entfernen: {email}")
-
-            # Dann hinzufügen
-            for email in diff.to_add:
-                if self.strato_client.add_forwarding_address(email):
-                    added += 1
-                    self.logger.info(f"✅ Hinzugefügt: {email}")
-                else:
-                    errors.append(f"Konnte nicht hinzufügen: {email}")
-
-            # Speichern
-            if added > 0 or removed > 0:
-                if self.strato_client.save_changes():
-                    self.logger.info("✅ Änderungen gespeichert")
-                else:
-                    errors.append("Konnte Änderungen nicht speichern")
-
-            # Zusammenfassung
-            self.logger.info(
-                f"Synchronisierung abgeschlossen: {added} hinzugefügt, {removed} entfernt"
-            )
-
-            if errors:
-                for error in errors:
-                    self.logger.warning(error)
-                return SyncResult(
-                    success=False,
-                    diff=diff,
-                    dry_run=False,
-                    error_message="; ".join(errors[:5]),  # Nur erste 5 Fehler
-                )
-
-            return SyncResult(
-                success=True,
-                diff=diff,
-                dry_run=self.config.dry_run,
-            )
+            if use_individual:
+                return self._sync_individual_rules(diff)
+            else:
+                return self._sync_single_rule(diff)
 
         except Exception as e:
             self.logger.exception(f"Unerwarteter Fehler: {e}")
@@ -279,6 +244,124 @@ class SeleniumMailSynchronizer:
             # Verbindung trennen
             if self.strato_client:
                 self.strato_client.disconnect()
+
+    def _sync_individual_rules(self, diff: SyncDiff) -> SyncResult:
+        """
+        Synchronisiert mit individuellen Regeln (eine Regel pro Mitglied).
+        
+        Args:
+            diff: Die berechneten Unterschiede
+            
+        Returns:
+            SyncResult mit dem Ergebnis
+        """
+        errors = []
+        added = 0
+        removed = 0
+
+        # Zuerst Regeln löschen
+        for email in diff.to_remove:
+            if self.strato_client.delete_individual_rule(email):
+                removed += 1
+                self.logger.info(f"✅ Regel gelöscht: {email}")
+            else:
+                errors.append(f"Konnte Regel nicht löschen: {email}")
+
+        # Dann neue Regeln erstellen
+        for email in diff.to_add:
+            if self.strato_client.create_individual_rule(email):
+                added += 1
+                self.logger.info(f"✅ Regel erstellt: {email}")
+            else:
+                errors.append(f"Konnte Regel nicht erstellen: {email}")
+
+        # Zusammenfassung
+        self.logger.info(
+            f"Synchronisierung abgeschlossen: {added} erstellt, {removed} gelöscht"
+        )
+
+        if errors:
+            for error in errors:
+                self.logger.warning(error)
+            return SyncResult(
+                success=False,
+                diff=diff,
+                dry_run=False,
+                error_message="; ".join(errors[:5]),  # Nur erste 5 Fehler
+            )
+
+        return SyncResult(
+            success=True,
+            diff=diff,
+            dry_run=self.config.dry_run,
+        )
+
+    def _sync_single_rule(self, diff: SyncDiff) -> SyncResult:
+        """
+        Synchronisiert mit einer einzelnen Regel (Legacy-Modus).
+        
+        Args:
+            diff: Die berechneten Unterschiede
+            
+        Returns:
+            SyncResult mit dem Ergebnis
+        """
+        # Öffne die Regel im Bearbeitungsmodus
+        if not self.strato_client.open_rule_for_editing():
+            return SyncResult(
+                success=False,
+                diff=diff,
+                dry_run=False,
+                error_message="Konnte Filterregel nicht zur Bearbeitung öffnen",
+            )
+
+        errors = []
+        added = 0
+        removed = 0
+
+        # Zuerst entfernen
+        for email in diff.to_remove:
+            if self.strato_client.remove_forwarding_address(email):
+                removed += 1
+                self.logger.info(f"✅ Entfernt: {email}")
+            else:
+                errors.append(f"Konnte nicht entfernen: {email}")
+
+        # Dann hinzufügen
+        for email in diff.to_add:
+            if self.strato_client.add_forwarding_address(email):
+                added += 1
+                self.logger.info(f"✅ Hinzugefügt: {email}")
+            else:
+                errors.append(f"Konnte nicht hinzufügen: {email}")
+
+        # Speichern
+        if added > 0 or removed > 0:
+            if self.strato_client.save_changes():
+                self.logger.info("✅ Änderungen gespeichert")
+            else:
+                errors.append("Konnte Änderungen nicht speichern")
+
+        # Zusammenfassung
+        self.logger.info(
+            f"Synchronisierung abgeschlossen: {added} hinzugefügt, {removed} entfernt"
+        )
+
+        if errors:
+            for error in errors:
+                self.logger.warning(error)
+            return SyncResult(
+                success=False,
+                diff=diff,
+                dry_run=False,
+                error_message="; ".join(errors[:5]),  # Nur erste 5 Fehler
+            )
+
+        return SyncResult(
+            success=True,
+            diff=diff,
+            dry_run=self.config.dry_run,
+        )
 
     def _print_diff_report(self, diff: SyncDiff):
         """Gibt einen detaillierten Report der Änderungen aus."""
