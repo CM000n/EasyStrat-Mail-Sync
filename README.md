@@ -4,7 +4,7 @@ Exportiert E-Mail-Adressen aktiver Mitglieder aus [EasyVerein](https://easyverei
 
 ## Funktionsweise
 
-```
+```text
 ┌─────────────────┐         ┌──────────────────┐
 │   EasyVerein    │         │      Strato      │
 │  (API v2.0)     │         │   (manuell)      │
@@ -18,6 +18,7 @@ Exportiert E-Mail-Adressen aktiver Mitglieder aus [EasyVerein](https://easyverei
 ```
 
 **EasyVerein ist der Single Point of Truth:**
+
 - Exportiert werden nur aktive Mitglieder (ohne Kündigungsdatum)
 - Das Tool zeigt genau welche E-Mails hinzugefügt/entfernt werden müssen
 - Die Änderungen in Strato werden manuell durchgeführt
@@ -26,6 +27,7 @@ Exportiert E-Mail-Adressen aktiver Mitglieder aus [EasyVerein](https://easyverei
 
 ```bash
 # 1. E-Mails aus EasyVerein exportieren
+cd easystrat
 python main.py --export
 
 # 2. Deine aktuellen Strato-Weiterleitungen in eine Datei kopieren (z.B. strato.txt)
@@ -40,6 +42,7 @@ python main.py --compare strato.txt
 ## Voraussetzungen
 
 ### EasyVerein
+
 - EasyVerein Account mit API-Zugang
 - API-Key aus dem EasyVerein Portal (Einstellungen → API)
 
@@ -75,6 +78,7 @@ EV_API_KEY=dein_api_key_hier
 ### E-Mails exportieren
 
 ```bash
+cd easystrat
 python main.py --export              # Einfache Liste (TXT)
 python main.py --export --csv        # Mit Mitgliederdetails (CSV)
 python main.py --export -o liste.txt # In bestimmte Datei
@@ -102,7 +106,7 @@ python main.py --debug --export
 
 ### Export
 
-```
+```bash
 2026-02-06 09:12:13 - INFO - Rufe E-Mail-Adressen aus EasyVerein ab...
 2026-02-06 09:12:13 - INFO - Mitglieder verarbeitet: 172, übersprungen: 116, eindeutige E-Mails: 167
 2026-02-06 09:12:13 - INFO - ✅ 167 E-Mail-Adressen exportiert nach: emails_20260206_091130.txt
@@ -110,7 +114,7 @@ python main.py --debug --export
 
 ### Vergleich
 
-```
+```bash
 ============================================================
 VERGLEICHSREPORT: EasyVerein ↔ Strato
 ============================================================
@@ -133,15 +137,21 @@ Strato-Datei:                 165 E-Mails
 
 ## Projektstruktur
 
-```
+```text
 easystrat_mail_sync/
-├── main.py              # Hauptskript mit CLI
-├── config.py            # Konfigurationsmodul
-├── easyverein_client.py # EasyVerein API Client
-├── export.py            # Export- und Vergleichsmodul
-├── requirements.txt     # Python-Abhängigkeiten
-├── .env.example         # Beispiel-Konfiguration
-└── README.md            # Diese Dokumentation
+├── easystrat/               # Python-Package
+│   ├── __init__.py          # Package-Initialisierung
+│   ├── main.py              # Hauptskript mit CLI
+│   ├── config.py            # Konfigurationsmodul
+│   ├── easyverein_client.py # EasyVerein API Client
+│   ├── export.py            # Export- und Vergleichsmodul
+│   ├── strato_selenium.py   # Strato Webmail Automation
+│   ├── strato_sieve.py      # Sieve-Filter Verwaltung
+│   ├── sync.py              # Synchronisationslogik
+│   └── sync_selenium.py     # Selenium-basierte Synchronisation
+├── requirements.txt         # Python-Abhängigkeiten
+├── .env.example             # Beispiel-Konfiguration
+└── README.md                # Diese Dokumentation
 ```
 
 ## Fehlerbehebung

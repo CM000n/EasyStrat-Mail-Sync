@@ -1,7 +1,5 @@
 # Umgebungsvariablen (enthält sensible Daten!)
 .env
-.venv
-.mypy_cache
 
 # Python
 __pycache__/
@@ -24,6 +22,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.mypy_cache/
 
 # Virtual Environment
 venv/

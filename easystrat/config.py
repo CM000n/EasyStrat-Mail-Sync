@@ -105,7 +105,20 @@ class SyncConfig:
         if env_path:
             load_dotenv(env_path)
         else:
-            load_dotenv()
+            # Versuche .env im aktuellen Verzeichnis oder Elternverzeichnis zu finden
+            current_dir = Path(__file__).resolve().parent
+            possible_paths = [
+                Path.cwd() / ".env",           # Aktuelles Arbeitsverzeichnis
+                current_dir / ".env",          # easystrat/ Verzeichnis
+                current_dir.parent / ".env",   # Projektwurzel
+            ]
+            
+            for env_file in possible_paths:
+                if env_file.exists():
+                    load_dotenv(env_file)
+                    break
+            else:
+                load_dotenv()  # Fallback: Standard-Verhalten
         
         # Erforderliche Variablen prüfen (nur EasyVerein)
         required_vars = ["EV_API_KEY"]
