@@ -27,14 +27,13 @@ Exportiert E-Mail-Adressen aktiver Mitglieder aus [EasyVerein](https://easyverei
 
 ```bash
 # 1. E-Mails aus EasyVerein exportieren
-cd easystrat
-python main.py --export
+easystrat export
 
 # 2. Deine aktuellen Strato-Weiterleitungen in eine Datei kopieren (z.B. strato.txt)
 #    Eine E-Mail pro Zeile
 
 # 3. Vergleichen und Report anzeigen
-python main.py --compare strato.txt
+easystrat compare strato.txt
 
 # 4. Angezeigte Änderungen manuell in Strato durchführen
 ```
@@ -48,20 +47,28 @@ python main.py --compare strato.txt
 
 ## Installation
 
-### 1. Virtuelle Umgebung erstellen (empfohlen)
+### Mit Poetry (empfohlen)
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/macOS
+# Poetry installieren (falls noch nicht vorhanden)
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Abhängigkeiten installieren und CLI verfügbar machen
+poetry install
+
+# Shell mit aktivierter Umgebung starten
+poetry shell
 ```
 
-### 2. Abhängigkeiten installieren
+### Alternativ mit pip
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-### 3. Konfiguration anlegen
+### Konfiguration anlegen
 
 ```bash
 cp .env.example .env
@@ -78,28 +85,42 @@ EV_API_KEY=dein_api_key_hier
 ### E-Mails exportieren
 
 ```bash
-cd easystrat
-python main.py --export              # Einfache Liste (TXT)
-python main.py --export --csv        # Mit Mitgliederdetails (CSV)
-python main.py --export -o liste.txt # In bestimmte Datei
+easystrat export              # Einfache Liste (TXT)
+easystrat export --csv        # Mit Mitgliederdetails (CSV)
+easystrat export -o liste.txt # In bestimmte Datei
 ```
 
 ### Mit Strato-Liste vergleichen
 
 ```bash
-python main.py --compare strato.txt
+easystrat compare strato.txt
+```
+
+### Synchronisieren
+
+```bash
+easystrat sync          # Trockenlauf (zeigt nur Änderungen)
+easystrat sync --apply  # Führt Änderungen durch
 ```
 
 ### Verbindung testen
 
 ```bash
-python main.py --test
+easystrat test
+easystrat test --strato-only   # Nur Strato testen
 ```
 
 ### Debug-Ausgaben
 
 ```bash
-python main.py --debug --export
+easystrat --debug export
+```
+
+### Hilfe anzeigen
+
+```bash
+easystrat --help
+easystrat export --help
 ```
 
 ## Beispielausgabe
@@ -141,7 +162,8 @@ Strato-Datei:                 165 E-Mails
 easystrat_mail_sync/
 ├── easystrat/               # Python-Package
 │   ├── __init__.py          # Package-Initialisierung
-│   ├── main.py              # Hauptskript mit CLI
+│   ├── cli.py               # Click CLI (Haupteinstiegspunkt)
+│   ├── main.py              # Legacy-Wrapper
 │   ├── config.py            # Konfigurationsmodul
 │   ├── easyverein_client.py # EasyVerein API Client
 │   ├── export.py            # Export- und Vergleichsmodul
@@ -149,7 +171,7 @@ easystrat_mail_sync/
 │   ├── strato_sieve.py      # Sieve-Filter Verwaltung
 │   ├── sync.py              # Synchronisationslogik
 │   └── sync_selenium.py     # Selenium-basierte Synchronisation
-├── requirements.txt         # Python-Abhängigkeiten
+├── pyproject.toml           # Poetry-Konfiguration & Abhängigkeiten
 ├── .env.example             # Beispiel-Konfiguration
 └── README.md                # Diese Dokumentation
 ```
