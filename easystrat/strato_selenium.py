@@ -12,6 +12,7 @@ from typing import Optional, Set
 from selenium import webdriver
 from selenium.common.exceptions import (
     ElementClickInterceptedException,
+    ElementNotInteractableException,
     NoSuchElementException,
     TimeoutException,
 )
@@ -30,9 +31,9 @@ class StratoWebmailConfig:
     password: str
     webmail_url: str = "https://webmail.strato.de/"
     headless: bool = True
-    browser: str = "chrome"  # oder "firefox"
+    browser: str = "chrome"
     timeout: int = 30
-    rule_name: str = "Männerchor"  # Name der Filterregel für Weiterleitungen
+    rule_name: str = "Maennerchor"  # Name der Filterregel für Weiterleitungen
 
 
 class StratoSeleniumClient:
@@ -103,11 +104,47 @@ class StratoSeleniumClient:
         return element
 
     def _safe_click(self, element):
-        """Klickt ein Element sicher an."""
+        """Klickt ein Element sicher an mit Scroll und Fallbacks."""
         try:
+            # Erst zum Element scrollen
+            self.driver.execute_script(
+                "arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element
+            )
+            time.sleep(0.3)
+
+            # Warten bis Element sichtbar ist
+            WebDriverWait(self.driver, 5).until(EC.visibility_of(element))
             element.click()
-        except ElementClickInterceptedException:
+        except (
+            ElementClickInterceptedException,
+            ElementNotInteractableException,
+            TimeoutException,
+        ):
+            # Fallback: JavaScript Click
             self.driver.execute_script("arguments[0].click();", element)
+
+    def _safe_send_keys(self, element, text: str):
+        """Gibt Text sicher in ein Element ein mit Scroll und Fallbacks."""
+        try:
+            # Erst zum Element scrollen
+            self.driver.execute_script(
+                "arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element
+            )
+            time.sleep(0.3)
+
+            # Warten bis Element sichtbar ist
+            WebDriverWait(self.driver, 5).until(EC.visibility_of(element))
+            element.clear()
+            element.send_keys(text)
+        except (ElementNotInteractableException, TimeoutException):
+            # Fallback: JavaScript-basierte Eingabe
+            self.driver.execute_script(
+                "arguments[0].value = arguments[1]; "
+                "arguments[0].dispatchEvent(new Event('input', {bubbles: true})); "
+                "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+                element,
+                text,
+            )
 
     def connect(self) -> bool:
         """
@@ -561,8 +598,7 @@ class StratoSeleniumClient:
                     continue
 
             if empty_field:
-                empty_field.clear()
-                empty_field.send_keys(email)
+                self._safe_send_keys(empty_field, email)
                 self.logger.debug(f"E-Mail-Adresse eingegeben: {email}")
                 return True
             else:
