@@ -82,7 +82,9 @@ class StratoWebmailConfig:
     headless: bool = True
     browser: str = "chrome"
     timeout: int = 30
-    rule_name: str = "Männerchor"  # Name der Filterregel für Weiterleitungen
+    rule_name: str = "Männerchor"  # Name der Filterregel (Legacy, für alte Single-Rule)
+    rule_prefix: str = "MC_"  # Prefix für individuelle Regeln pro Mitglied
+    use_individual_rules: bool = True  # True = eine Regel pro Mitglied
 
 
 @dataclass
@@ -93,6 +95,7 @@ class SyncConfig:
     strato: Optional[StratoConfig] = None
     strato_webmail: Optional[StratoWebmailConfig] = None
     dry_run: bool = True
+    allow_delete: bool = False  # Muss explizit erlaubt werden um Regeln zu löschen
     log_level: str = "INFO"
 
     @classmethod
@@ -169,6 +172,9 @@ class SyncConfig:
                 browser=os.getenv("STRATO_BROWSER", "chrome").lower(),
                 timeout=int(os.getenv("STRATO_TIMEOUT", "30")),
                 rule_name=os.getenv("STRATO_RULE_NAME", "Männerchor"),
+                rule_prefix=os.getenv("STRATO_RULE_PREFIX", "MC_"),
+                use_individual_rules=os.getenv("STRATO_INDIVIDUAL_RULES", "true").lower()
+                in ("true", "1", "yes"),
             )
 
         return cls(
