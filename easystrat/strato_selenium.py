@@ -5,6 +5,7 @@ Automatisiert das Strato Webmail (Open-Xchange) um Weiterleitungen zu verwalten.
 """
 
 import logging
+import shutil
 import time
 from dataclasses import dataclass
 from typing import Optional, Set
@@ -17,10 +18,21 @@ from selenium.common.exceptions import (
     TimeoutException,
 )
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+# WebDriver-Manager imports (nur bei Bedarf verwendet)
+try:
+    from webdriver_manager.chrome import ChromeDriverManager
+    from webdriver_manager.firefox import GeckoDriverManager
+
+    WEBDRIVER_MANAGER_AVAILABLE = True
+except ImportError:
+    WEBDRIVER_MANAGER_AVAILABLE = False
 
 
 @dataclass
@@ -61,15 +73,50 @@ class StratoSeleniumClient:
         self.driver: Optional[webdriver.Chrome | webdriver.Firefox] = None
         self._logged_in = False
 
+    def _get_chromedriver_path(self) -> str | None:
+        """Findet den ChromeDriver-Pfad (System oder via webdriver-manager)."""
+        # 1. Versuche System-chromedriver zu finden (bevorzugt bei neuen Chrome-Versionen)
+        system_driver = shutil.which("chromedriver")
+        if system_driver:
+            self.logger.debug(f"Verwende System-ChromeDriver: {system_driver}")
+            return system_driver
+
+        # 2. Fallback: webdriver-manager
+        if WEBDRIVER_MANAGER_AVAILABLE:
+            self.logger.debug("Verwende webdriver-manager für ChromeDriver")
+            return ChromeDriverManager().install()
+
+        return None
+
+    def _get_geckodriver_path(self) -> str | None:
+        """Findet den GeckoDriver-Pfad (System oder via webdriver-manager)."""
+        # 1. Versuche System-geckodriver zu finden
+        system_driver = shutil.which("geckodriver")
+        if system_driver:
+            self.logger.debug(f"Verwende System-GeckoDriver: {system_driver}")
+            return system_driver
+
+        # 2. Fallback: webdriver-manager
+        if WEBDRIVER_MANAGER_AVAILABLE:
+            self.logger.debug("Verwende webdriver-manager für GeckoDriver")
+            return GeckoDriverManager().install()
+
+        return None
+
     def _create_driver(self):
-        """Erstellt den WebDriver."""
+        """Erstellt den WebDriver mit automatischem Driver-Management."""
         if self.config.browser.lower() == "firefox":
             options = FirefoxOptions()
             if self.config.headless:
                 options.add_argument("--headless")
             options.add_argument("--width=1920")
             options.add_argument("--height=1080")
-            self.driver = webdriver.Firefox(options=options)
+            driver_path = self._get_geckodriver_path()
+            if driver_path:
+                service = FirefoxService(driver_path)
+                self.driver = webdriver.Firefox(service=service, options=options)
+            else:
+                self.driver = webdriver.Firefox(options=options)
         else:
             # Chrome also Standard
             options = ChromeOptions()
@@ -81,7 +128,12 @@ class StratoSeleniumClient:
             options.add_argument("--disable-gpu")
             # Deutsch also Sprache
             options.add_argument("--lang=de-DE")
-            self.driver = webdriver.Chrome(options=options)
+            driver_path = self._get_chromedriver_path()
+            if driver_path:
+                service = ChromeService(driver_path)
+                self.driver = webdriver.Chrome(service=service, options=options)
+            else:
+                self.driver = webdriver.Chrome(options=options)
 
         self.driver.implicitly_wait(10)
         self.logger.debug(f"WebDriver erstellt ({self.config.browser})")

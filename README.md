@@ -52,7 +52,33 @@ easystrat sync --apply --allow-delete
 ### System
 
 - Python 3.10+
-- Chrome oder Chromium Browser
+- Chrome oder Chromium Browser (der passende WebDriver wird automatisch heruntergeladen)
+
+#### Browser-Installation (Linux)
+
+**Debian/Ubuntu:**
+
+```bash
+# Chromium (empfohlen)
+sudo apt-get update && sudo apt-get install -y chromium chromium-driver
+
+# Alternativ: Firefox
+sudo apt-get update && sudo apt-get install -y firefox-esr
+```
+
+**Fedora/RHEL:**
+
+```bash
+sudo dnf install -y chromium chromium-headless
+```
+
+**Arch Linux:**
+
+```bash
+sudo pacman -S chromium
+```
+
+> **Hinweis:** Der WebDriver (chromedriver/geckodriver) wird automatisch von `webdriver-manager` heruntergeladen und verwaltet. Es muss nur der Browser selbst installiert sein.
 
 ## Installation
 
@@ -257,7 +283,22 @@ Die Strato-Synchronisierung verwendet Selenium mit Chrome/Chromium. Bei Probleme
 
 - Prüfe E-Mail und Passwort in `.env`
 - Teste manuellen Login unter https://webmail.strato.de/
-- Chrome/Chromium muss installiert sein
+- Chrome/Chromium muss installiert sein (siehe [Browser-Installation](#browser-installation-linux))
+
+### WebDriver-Fehler / "chromedriver not found"
+
+- Der WebDriver wird automatisch von `webdriver-manager` heruntergeladen
+- Stelle sicher, dass der Browser selbst installiert ist:
+
+  ```bash
+  # Prüfe ob chromium installiert ist
+  which chromium || which chromium-browser || which google-chrome
+
+  # Falls nicht, installiere Chromium (Debian/Ubuntu)
+  sudo apt-get update && sudo apt-get install -y chromium chromium-driver
+  ```
+
+- Bei Firewall/Proxy: Der erste Start lädt den WebDriver aus dem Internet
 
 ### "Konnte 'Umleiten nach' nicht auswählen"
 
