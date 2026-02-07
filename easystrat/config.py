@@ -95,6 +95,7 @@ class SyncConfig:
     strato: Optional[StratoConfig] = None
     strato_webmail: Optional[StratoWebmailConfig] = None
     dry_run: bool = True
+    allow_delete: bool = False  # Muss explizit erlaubt werden um Regeln zu löschen
     log_level: str = "INFO"
 
     @classmethod
@@ -172,7 +173,8 @@ class SyncConfig:
                 timeout=int(os.getenv("STRATO_TIMEOUT", "30")),
                 rule_name=os.getenv("STRATO_RULE_NAME", "Männerchor"),
                 rule_prefix=os.getenv("STRATO_RULE_PREFIX", "MC_"),
-                use_individual_rules=os.getenv("STRATO_INDIVIDUAL_RULES", "true").lower() in ("true", "1", "yes"),
+                use_individual_rules=os.getenv("STRATO_INDIVIDUAL_RULES", "true").lower()
+                in ("true", "1", "yes"),
             )
 
         return cls(

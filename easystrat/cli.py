@@ -115,14 +115,18 @@ def compare(ctx: click.Context, strato_file: Path) -> None:
 
 @cli.command()
 @click.option("--apply", is_flag=True, help="Änderungen tatsächlich durchführen")
+@click.option(
+    "--allow-delete", is_flag=True, help="Erlaubt das Löschen von Regeln (sonst nur hinzufügen)"
+)
 @click.option("--no-headless", is_flag=True, help="Browser sichtbar anzeigen (für Debugging)")
 @click.pass_context
-def sync(ctx: click.Context, apply: bool, no_headless: bool) -> None:
+def sync(ctx: click.Context, apply: bool, allow_delete: bool, no_headless: bool) -> None:
     """
     Synchronisiert EasyVerein mit Strato.
 
     Standardmäßig wird ein Trockenlauf durchgeführt (keine Änderungen).
     Mit --apply werden die Änderungen tatsächlich durchgeführt.
+    Mit --allow-delete werden auch Regeln gelöscht, die nicht mehr in EasyVerein sind.
     """
     from .sync_selenium import SeleniumMailSynchronizer
 
@@ -138,6 +142,7 @@ def sync(ctx: click.Context, apply: bool, no_headless: bool) -> None:
         config.strato_webmail.headless = False
 
     config.dry_run = not apply
+    config.allow_delete = allow_delete
 
     synchronizer = SeleniumMailSynchronizer(config, logger)
     result = synchronizer.sync()

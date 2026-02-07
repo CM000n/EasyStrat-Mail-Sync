@@ -546,7 +546,7 @@ class StratoSeleniumClient:
     def _create_new_redirect_field(self) -> bool:
         """
         Erstellt ein neues Umleitungsfeld durch Klicken auf den "Aktion hinzufügen"-Button.
-        
+
         Returns:
             True wenn ein neues Feld erstellt wurde
         """
@@ -563,7 +563,7 @@ class StratoSeleniumClient:
             "//button[contains(text(), '+')]",
             "//*[@data-action='add']",
         ]
-        
+
         add_button = None
         for selector in add_button_selectors:
             buttons = self.driver.find_elements(By.XPATH, selector)
@@ -571,43 +571,49 @@ class StratoSeleniumClient:
                 add_button = buttons[0]
                 self.logger.debug(f"'Aktion hinzufügen'-Button gefunden mit Selektor: {selector}")
                 break
-        
+
         if not add_button:
             self.logger.warning("Kein 'Aktion hinzufügen'-Button gefunden")
             return False
-        
+
         # Button klicken
         self._safe_click(add_button)
         time.sleep(1.5)
-        
+
         # Versuche "Umleiten nach" als Action auszuwählen
         try:
             # Verschiedene Selektoren für das Dropdown
             dropdown_selectors = [
                 'select[name="actioncontent"]',
-                '.action-select',
-                'select.form-control',
+                ".action-select",
+                "select.form-control",
                 'select[name*="action"]',
                 'select[id*="action"]',
             ]
-            
+
             action_dropdown = None
             for selector in dropdown_selectors:
                 try:
-                    action_dropdown = self._wait_and_find(
-                        By.CSS_SELECTOR, selector, timeout=3
-                    )
+                    action_dropdown = self._wait_and_find(By.CSS_SELECTOR, selector, timeout=3)
                     if action_dropdown:
                         break
                 except Exception:
                     continue
-            
+
             if action_dropdown:
                 from selenium.webdriver.support.ui import Select
+
                 select = Select(action_dropdown)
-                
+
                 # Versuche verschiedene Werte für "redirect"
-                redirect_values = ["redirect", "Redirect", "umleiten", "Umleiten", "forward", "Forward"]
+                redirect_values = [
+                    "redirect",
+                    "Redirect",
+                    "umleiten",
+                    "Umleiten",
+                    "forward",
+                    "Forward",
+                ]
                 for value in redirect_values:
                     try:
                         select.select_by_value(value)
@@ -617,7 +623,7 @@ class StratoSeleniumClient:
                         continue
         except Exception as e:
             self.logger.debug(f"Konnte Aktions-Dropdown nicht konfigurieren: {e}")
-        
+
         time.sleep(1)
         return True
 
@@ -643,7 +649,7 @@ class StratoSeleniumClient:
                 'input[placeholder*="@"]',
                 'input[placeholder*="mail"]',
             ]
-            
+
             def find_empty_redirect_field():
                 """Sucht ein leeres Umleitungsfeld."""
                 for selector in input_selectors:
@@ -659,31 +665,44 @@ class StratoSeleniumClient:
                         except Exception:
                             continue
                 return None
-            
+
             # Erst nach leerem Feld suchen
             empty_field = find_empty_redirect_field()
-            
+
             # Wenn kein leeres Feld gefunden, erstelle ein neues
             if not empty_field:
                 self.logger.debug("Kein leeres Feld gefunden, erstelle neues Umleitungsfeld...")
-                
+
                 if self._create_new_redirect_field():
                     # Nach dem Erstellen erneut nach leerem Feld suchen
                     time.sleep(0.5)
                     empty_field = find_empty_redirect_field()
-                    
+
                     if not empty_field:
-                        self.logger.debug("Suche nach neu erstelltem Feld mit erweiterten Selektoren...")
+                        self.logger.debug(
+                            "Suche nach neu erstelltem Feld mit erweiterten Selektoren..."
+                        )
                         # Nochmals mit allen Input-Feldern versuchen
-                        all_inputs = self.driver.find_elements(By.CSS_SELECTOR, 'input[type="text"], input[type="email"], input:not([type])')
+                        all_inputs = self.driver.find_elements(
+                            By.CSS_SELECTOR,
+                            'input[type="text"], input[type="email"], input:not([type])',
+                        )
                         for field in reversed(all_inputs):
                             try:
                                 value = field.get_attribute("value")
                                 field_id = field.get_attribute("id") or ""
                                 field_name = field.get_attribute("name") or ""
                                 # Prüfen ob es ein Redirect-Feld sein könnte
-                                if (not value or value.strip() == "") and field.is_displayed() and field.is_enabled():
-                                    if "redirect" in field_id.lower() or "redirect" in field_name.lower() or "to" in field_name.lower():
+                                if (
+                                    (not value or value.strip() == "")
+                                    and field.is_displayed()
+                                    and field.is_enabled()
+                                ):
+                                    if (
+                                        "redirect" in field_id.lower()
+                                        or "redirect" in field_name.lower()
+                                        or "to" in field_name.lower()
+                                    ):
                                         empty_field = field
                                         break
                             except Exception:
@@ -767,31 +786,35 @@ class StratoSeleniumClient:
         self.logger.info("Speichere Änderungen...")
 
         try:
-            # Suche den Speichern-Button
-            save_buttons = self.driver.find_elements(
-                By.XPATH,
-                "//button[contains(text(), 'Speichern')] | //button[contains(text(), 'Save')] | //button[@data-action='save']",
-            )
+            # OPTIMIERT: Funktionierende Selektoren zuerst, keine Debug-Screenshots
+            save_button_selectors = [
+                (By.XPATH, "//button[contains(text(), 'Speichern')]"),  # Funktioniert!
+                (By.XPATH, "//a[contains(text(), 'Speichern')]"),
+                (By.CSS_SELECTOR, 'button[data-action="save"]'),
+                (By.CSS_SELECTOR, "button.btn-primary"),
+            ]
 
-            if save_buttons:
-                for btn in save_buttons:
-                    try:
+            save_button = None
+            for by, selector in save_button_selectors:
+                try:
+                    buttons = self.driver.find_elements(by, selector)
+                    for btn in buttons:
                         if btn.is_displayed() and btn.is_enabled():
-                            self._safe_click(btn)
-                            self.logger.debug("Speichern-Button geklickt")
-                            time.sleep(2)
-                            return True
-                    except Exception:
-                        continue
+                            save_button = btn
+                            self.logger.debug(f"Speichern-Button gefunden mit: {selector}")
+                            break
+                    if save_button:
+                        break
+                except Exception:
+                    continue
 
-            # Alternative: Submit per Enter im aktiven Element
-            from selenium.webdriver.common.keys import Keys
+            if save_button:
+                self._safe_click(save_button)
+                self.logger.debug("Speichern-Button geklickt")
+                time.sleep(1.5)
+                return True
 
-            active = self.driver.switch_to.active_element
-            active.send_keys(Keys.ENTER)
-            time.sleep(1)
-
-            self.logger.warning("Speichern-Button nicht gefunden oder nicht klickbar")
+            self.logger.warning("Speichern-Button nicht gefunden")
             return False
 
         except Exception as e:
@@ -805,9 +828,9 @@ class StratoSeleniumClient:
     def get_managed_emails_from_rules(self) -> Set[str]:
         """
         Liest alle E-Mail-Adressen aus Regeln mit dem konfigurierten Prefix.
-        
+
         Bei individuellen Regeln hat jede Regel den Namen "{prefix}{email}".
-        
+
         Returns:
             Set mit E-Mail-Adressen die durch Regeln verwaltet werden
         """
@@ -817,6 +840,7 @@ class StratoSeleniumClient:
 
         emails: Set[str] = set()
         prefix = self.config.rule_prefix
+        self.logger.debug(f"Suche nach Regeln mit Prefix: '{prefix}'")
 
         try:
             if not self._navigate_to_mail_filter():
@@ -825,46 +849,86 @@ class StratoSeleniumClient:
 
             time.sleep(2)
 
-            # Alle Regelnamen sammeln
+            # Debug: Screenshot der Filterregeln-Seite
+            try:
+                self.driver.save_screenshot("debug_rules_list.png")
+                self.logger.debug("Screenshot der Regelliste gespeichert")
+            except Exception:
+                pass
+
+            # Versuche verschiedene Selektoren für die Regelliste
+            all_found_texts = []
+
+            # Methode 1: CSS Selektoren
             rule_elements = self.driver.find_elements(
                 By.CSS_SELECTOR,
-                '.rule-list li, .settings-list-view li, [data-type="rule"], .list-item'
+                '.rule-list li, .settings-list-view li, [data-type="rule"], .list-item, .listbox li',
             )
-            
-            self.logger.debug(f"{len(rule_elements)} Regel-Elemente gefunden")
+            self.logger.debug(f"CSS-Selektoren: {len(rule_elements)} Elemente gefunden")
 
             for rule_el in rule_elements:
                 try:
-                    # Versuche den Regelnamen zu extrahieren
                     rule_name = rule_el.text.strip()
-                    
-                    # Prüfe ob der Name mit unserem Prefix beginnt
-                    if rule_name.startswith(prefix):
-                        # Email aus dem Regelnamen extrahieren
-                        email = rule_name[len(prefix):].lower().strip()
-                        if "@" in email:
-                            emails.add(email)
-                            self.logger.debug(f"Verwaltete Regel gefunden: {rule_name} -> {email}")
+                    if rule_name:
+                        all_found_texts.append(f"CSS: '{rule_name[:50]}...'")
+                        # Prüfe ob der Name mit unserem Prefix beginnt
+                        if rule_name.startswith(prefix):
+                            email = rule_name[len(prefix) :].lower().strip()
+                            # Nur erste Zeile (falls mehrzeilig)
+                            email = email.split("\n")[0].strip()
+                            if "@" in email:
+                                emails.add(email)
+                                self.logger.debug(f"✓ Regel gefunden: '{rule_name}' -> '{email}'")
                 except Exception:
                     continue
 
-            # Alternative: Auch nach span-Elementen suchen
+            # Methode 2: XPath für Spans/Divs mit dem Prefix
             rule_spans = self.driver.find_elements(
                 By.XPATH,
-                f"//span[starts-with(text(), '{prefix}')] | //div[starts-with(text(), '{prefix}')]"
+                f"//span[starts-with(text(), '{prefix}')] | //div[starts-with(text(), '{prefix}')] | //*[contains(text(), '{prefix}')]",
             )
-            
+            self.logger.debug(f"XPath prefix-Suche: {len(rule_spans)} Elemente gefunden")
+
             for span in rule_spans:
                 try:
                     rule_name = span.text.strip()
-                    if rule_name.startswith(prefix):
-                        email = rule_name[len(prefix):].lower().strip()
+                    if rule_name and rule_name.startswith(prefix):
+                        all_found_texts.append(f"XPATH: '{rule_name[:50]}...'")
+                        email = rule_name[len(prefix) :].lower().strip()
+                        email = email.split("\n")[0].strip()
                         if "@" in email:
                             emails.add(email)
+                            self.logger.debug(
+                                f"✓ Regel gefunden (XPath): '{rule_name}' -> '{email}'"
+                            )
                 except Exception:
                     continue
 
-            self.logger.info(f"{len(emails)} verwaltete E-Mail-Regeln gefunden (Prefix: {prefix})")
+            # Methode 3: Alle li-Elemente in der Seite prüfen
+            all_li = self.driver.find_elements(By.TAG_NAME, "li")
+            self.logger.debug(f"Alle li-Elemente: {len(all_li)} gefunden")
+            for li in all_li:
+                try:
+                    li_text = li.text.strip()
+                    if li_text and prefix in li_text:
+                        self.logger.debug(f"  li mit Prefix: '{li_text[:80]}...'")
+                        # Extrahiere E-Mail wenn möglich
+                        if li_text.startswith(prefix):
+                            email = li_text[len(prefix) :].lower().strip()
+                            email = email.split("\n")[0].strip()
+                            if "@" in email:
+                                emails.add(email)
+                except Exception:
+                    continue
+
+            self.logger.info(
+                f"{len(emails)} verwaltete E-Mail-Regeln gefunden (Prefix: '{prefix}')"
+            )
+            if emails:
+                self.logger.debug(f"Gefundene E-Mails: {sorted(emails)}")
+            else:
+                self.logger.warning(f"Keine Regeln mit Prefix '{prefix}' gefunden!")
+                self.logger.debug(f"Gefundene Texte (erste 10): {all_found_texts[:10]}")
 
         except Exception as e:
             self.logger.error(f"Fehler beim Lesen der Regeln: {e}")
@@ -874,13 +938,13 @@ class StratoSeleniumClient:
     def create_individual_rule(self, email: str) -> bool:
         """
         Erstellt eine neue individuelle Filterregel für eine E-Mail-Adresse.
-        
+
         Die Regel wird mit dem Namen "{prefix}{email}" erstellt und leitet
         alle E-Mails an die angegebene Adresse weiter.
-        
+
         Args:
             email: E-Mail-Adresse für die Weiterleitung
-            
+
         Returns:
             True bei Erfolg
         """
@@ -901,31 +965,14 @@ class StratoSeleniumClient:
 
             # Suche den "Neue Regel erstellen" Button - verschiedene Selektoren
             new_rule_buttons = []
+            # OPTIMIERT: Funktionierende Selektoren zuerst
             add_rule_selectors = [
-                # XPath für deutsche UI
-                (By.XPATH, "//button[contains(text(), 'Neue Regel')]"),
+                (By.XPATH, "//button[contains(text(), 'Neue Regel')]"),  # Funktioniert!
                 (By.XPATH, "//a[contains(text(), 'Neue Regel')]"),
-                (By.XPATH, "//button[contains(text(), 'Regel hinzufügen')]"),
-                (By.XPATH, "//a[contains(text(), 'Regel hinzufügen')]"),
-                (By.XPATH, "//button[contains(text(), 'Hinzufügen')]"),
-                (By.XPATH, "//a[contains(text(), 'Hinzufügen')]"),
-                # XPath für englische UI
-                (By.XPATH, "//button[contains(text(), 'Add new rule')]"),
-                (By.XPATH, "//a[contains(text(), 'Add new rule')]"),
-                (By.XPATH, "//button[contains(text(), 'Add rule')]"),
-                (By.XPATH, "//button[contains(text(), 'New rule')]"),
-                # Data-Attribute
-                (By.XPATH, "//button[@data-action='create']"),
-                (By.XPATH, "//a[@data-action='create']"),
-                (By.XPATH, "//*[@data-action='io.ox/mail/mailfilter/settings/filter/add']"),
-                # CSS Selektoren
-                (By.CSS_SELECTOR, 'button.add-rule'),
-                (By.CSS_SELECTOR, 'a.add-rule'),
-                (By.CSS_SELECTOR, '.btn-add-rule'),
                 (By.CSS_SELECTOR, '[data-action="io.ox/mail/mailfilter/settings/filter/add"]'),
-                (By.CSS_SELECTOR, 'button.btn-primary'),  # Oft ist der Haupt-Button primär
+                (By.XPATH, "//button[contains(text(), 'Add new rule')]"),
             ]
-            
+
             for by, selector in add_rule_selectors:
                 try:
                     elements = self.driver.find_elements(by, selector)
@@ -951,38 +998,17 @@ class StratoSeleniumClient:
                 return False
 
             self._safe_click(new_rule_buttons[0])
-            time.sleep(3)  # Mehr Zeit für das Modal
-
-            # Debug-Screenshot nach Klick auf "Neue Regel"
-            try:
-                self.driver.save_screenshot("debug_new_rule_dialog.png")
-                with open("debug_new_rule_dialog.html", "w", encoding="utf-8") as f:
-                    f.write(self.driver.page_source)
-                self.logger.debug("Debug-Dateien für neuen Regel-Dialog gespeichert")
-            except Exception:
-                pass
+            time.sleep(2)  # Zeit für das Modal
 
             # Jetzt sind wir im Regel-Bearbeitungsdialog
-            # 1. Regelnamen setzen - verschiedene Selektoren ausprobieren
+            # 1. Regelnamen setzen - OPTIMIERT: Funktionierende Selektoren zuerst
             name_input = None
             name_selectors = [
-                # CSS Selektoren
-                (By.CSS_SELECTOR, 'input[name="rulename"]'),
-                (By.CSS_SELECTOR, 'input[id*="rulename"]'),
-                (By.CSS_SELECTOR, 'input[placeholder*="Name"]'),
-                (By.CSS_SELECTOR, 'input.rule-name'),
-                (By.CSS_SELECTOR, '.modal input[type="text"]:first-of-type'),
-                (By.CSS_SELECTOR, '.io-ox-mailfilter-edit input[type="text"]'),
-                (By.CSS_SELECTOR, 'input.form-control[type="text"]'),
-                (By.CSS_SELECTOR, '.settings-detail-pane input[type="text"]'),
-                # XPath Selektoren
+                (By.CSS_SELECTOR, 'input[name="rulename"]'),  # Funktioniert!
                 (By.XPATH, "//input[@name='rulename']"),
-                (By.XPATH, "//label[contains(text(), 'Name')]/following::input[1]"),
-                (By.XPATH, "//label[contains(text(), 'Regelname')]/following::input[1]"),
-                (By.XPATH, "//div[contains(@class, 'modal')]//input[@type='text'][1]"),
-                (By.XPATH, "//input[contains(@class, 'form-control')][@type='text']"),
+                (By.CSS_SELECTOR, 'input[id*="rulename"]'),
             ]
-            
+
             for by, selector in name_selectors:
                 try:
                     elements = self.driver.find_elements(by, selector)
@@ -995,22 +1021,24 @@ class StratoSeleniumClient:
                         break
                 except Exception:
                     continue
-            
+
             if not name_input:
                 self.logger.error("Kein Namensfeld gefunden - prüfe debug_new_rule_dialog.png/html")
                 # Liste alle sichtbaren Input-Felder auf
-                all_inputs = self.driver.find_elements(By.CSS_SELECTOR, 'input')
+                all_inputs = self.driver.find_elements(By.CSS_SELECTOR, "input")
                 self.logger.debug(f"Gefundene Input-Felder: {len(all_inputs)}")
                 for i, inp in enumerate(all_inputs[:10]):
                     try:
-                        self.logger.debug(f"  Input {i}: type={inp.get_attribute('type')}, "
-                                        f"name={inp.get_attribute('name')}, "
-                                        f"id={inp.get_attribute('id')}, "
-                                        f"visible={inp.is_displayed()}")
+                        self.logger.debug(
+                            f"  Input {i}: type={inp.get_attribute('type')}, "
+                            f"name={inp.get_attribute('name')}, "
+                            f"id={inp.get_attribute('id')}, "
+                            f"visible={inp.is_displayed()}"
+                        )
                     except Exception:
                         pass
                 return False
-            
+
             try:
                 name_input.clear()
                 self._safe_send_keys(name_input, rule_name)
@@ -1019,7 +1047,7 @@ class StratoSeleniumClient:
                 self.logger.error(f"Konnte Regelnamen nicht setzen: {e}")
                 return False
 
-            time.sleep(1)
+            time.sleep(0.5)
 
             # 2. Aktion hinzufügen: Umleiten
             if not self._add_redirect_action_to_new_rule(email):
@@ -1042,223 +1070,132 @@ class StratoSeleniumClient:
     def _add_redirect_action_to_new_rule(self, email: str) -> bool:
         """
         Fügt eine Umleitungsaktion zu einer neuen Regel hinzu.
-        
-        Args:
-            email: Ziel-E-Mail-Adresse für die Umleitung
-            
-        Returns:
-            True bei Erfolg
+        OPTIMIERT: Funktionierende Selektoren priorisiert, kürzere Wartezeiten.
         """
         try:
-            # Debug-Screenshot vor dem Hinzufügen der Aktion
-            try:
-                self.driver.save_screenshot("debug_before_add_action.png")
-                with open("debug_before_add_action.html", "w", encoding="utf-8") as f:
-                    f.write(self.driver.page_source)
-                self.logger.debug("Debug-Dateien vor Aktion hinzufügen gespeichert")
-            except Exception:
-                pass
-
-            # Suche den "Aktion hinzufügen"-Button mit verschiedenen Selektoren
-            add_action_selectors = [
-                (By.XPATH, "//button[contains(text(), 'Aktion hinzufügen')]"),
-                (By.XPATH, "//a[contains(text(), 'Aktion hinzufügen')]"),
-                (By.XPATH, "//button[contains(text(), 'Add action')]"),
-                (By.XPATH, "//a[contains(text(), 'Add action')]"),
-                (By.XPATH, "//button[@data-action='add-action']"),
-                (By.XPATH, "//*[contains(@class, 'add-action')]"),
-                (By.CSS_SELECTOR, 'button.add-action'),
-                (By.CSS_SELECTOR, 'a.add-action'),
-                (By.CSS_SELECTOR, '[data-action="add-action"]'),
-                # Open-Xchange spezifisch
-                (By.CSS_SELECTOR, '.actions .dropdown-toggle'),
-                (By.CSS_SELECTOR, 'fieldset.actions button'),
-                (By.XPATH, "//fieldset[contains(@class, 'actions')]//button"),
-            ]
-            
-            add_action_clicked = False
-            for by, selector in add_action_selectors:
+            # Finde den Aktionen-Bereich (legend.actions -> parent fieldset)
+            actions_fieldset = None
+            for by, selector in [
+                (By.XPATH, "//legend[contains(@class, 'actions')]/parent::fieldset"),
+                (By.XPATH, "//legend[contains(text(), 'Aktion')]/parent::fieldset"),
+            ]:
                 try:
                     elements = self.driver.find_elements(by, selector)
                     for elem in elements:
-                        if elem.is_displayed() and elem.is_enabled():
-                            self._safe_click(elem)
-                            self.logger.debug(f"'Aktion hinzufügen'-Button geklickt: {selector}")
-                            add_action_clicked = True
-                            time.sleep(1.5)
+                        if elem.is_displayed():
+                            actions_fieldset = elem
                             break
-                    if add_action_clicked:
+                    if actions_fieldset:
                         break
                 except Exception:
                     continue
-            
+
+            # Klicke "Aktion hinzufügen"
+            add_action_clicked = False
+            if actions_fieldset:
+                try:
+                    for link in actions_fieldset.find_elements(By.TAG_NAME, "a"):
+                        link_text = link.text.strip().lower()
+                        if "aktion" in link_text and "hinzufügen" in link_text:
+                            if link.is_displayed() and link.is_enabled():
+                                self._safe_click(link)
+                                self.logger.debug("'Aktion hinzufügen' geklickt")
+                                add_action_clicked = True
+                                time.sleep(1)
+                                break
+                except Exception:
+                    pass
+
             if not add_action_clicked:
-                self.logger.debug("Kein 'Aktion hinzufügen'-Button gefunden - vielleicht bereits eine Aktion vorhanden")
+                # Fallback: Suche global
+                for link in self.driver.find_elements(
+                    By.XPATH, "//a[contains(text(), 'Aktion hinzufügen')]"
+                ):
+                    if link.is_displayed() and link.is_enabled():
+                        self._safe_click(link)
+                        add_action_clicked = True
+                        time.sleep(1)
+                        break
 
-            # Wähle "Umleiten nach" im Aktions-Dropdown
-            # Suche alle Select-Elemente und versuche "redirect" auszuwählen
-            action_dropdown_selectors = [
-                (By.CSS_SELECTOR, 'select[name*="action"]'),
-                (By.CSS_SELECTOR, 'select.action-select'),
-                (By.CSS_SELECTOR, 'select.form-control'),
-                (By.CSS_SELECTOR, '.actions select'),
-                (By.CSS_SELECTOR, 'fieldset.actions select'),
-                (By.XPATH, "//select[contains(@name, 'action')]"),
-                (By.XPATH, "//fieldset[contains(@class, 'actions')]//select"),
-            ]
-            
-            redirect_selected = False
-            from selenium.webdriver.support.ui import Select
-            
-            for by, selector in action_dropdown_selectors:
-                if redirect_selected:
-                    break
+            if not add_action_clicked:
+                self.logger.warning("Kein 'Aktion hinzufügen'-Button gefunden")
+                return False
+
+            # Aktualisiere Aktionen-Bereich nach Klick
+            actions_fieldset = None
+            for by, selector in [
+                (By.XPATH, "//legend[contains(@class, 'actions')]/parent::fieldset"),
+                (By.XPATH, "//legend[contains(text(), 'Aktion')]/parent::fieldset"),
+            ]:
                 try:
-                    dropdowns = self.driver.find_elements(by, selector)
-                    for dropdown in dropdowns:
-                        if not dropdown.is_displayed():
-                            continue
-                        try:
-                            select = Select(dropdown)
-                            # Versuche verschiedene Werte für "redirect"
-                            redirect_options = [
-                                "redirect", "Redirect", "umleiten", "Umleiten", 
-                                "Umleiten an", "forward", "Forward", 
-                                "Weiterleiten", "weiterleiten"
-                            ]
-                            
-                            # Erst nach Value versuchen
-                            for value in redirect_options:
-                                try:
-                                    select.select_by_value(value)
-                                    self.logger.debug(f"Aktion auf '{value}' gesetzt (by value)")
-                                    redirect_selected = True
-                                    break
-                                except Exception:
-                                    pass
-                            
-                            # Dann nach sichtbarem Text
-                            if not redirect_selected:
-                                for text in redirect_options:
-                                    try:
-                                        select.select_by_visible_text(text)
-                                        self.logger.debug(f"Aktion auf '{text}' gesetzt (by text)")
-                                        redirect_selected = True
-                                        break
-                                    except Exception:
-                                        pass
-                            
-                            # Als letztes: Suche in allen Optionen
-                            if not redirect_selected:
-                                for option in select.options:
-                                    opt_text = option.text.lower()
-                                    opt_value = option.get_attribute("value").lower()
-                                    if "redirect" in opt_text or "umleit" in opt_text or "weiterleit" in opt_text:
-                                        select.select_by_visible_text(option.text)
-                                        self.logger.debug(f"Aktion gefunden und gesetzt: {option.text}")
-                                        redirect_selected = True
-                                        break
-                                    elif "redirect" in opt_value or "umleit" in opt_value:
-                                        select.select_by_value(option.get_attribute("value"))
-                                        self.logger.debug(f"Aktion gefunden (value): {opt_value}")
-                                        redirect_selected = True
-                                        break
-                            
-                            if redirect_selected:
-                                break
-                        except Exception as e:
-                            self.logger.debug(f"Dropdown-Fehler: {e}")
-                            continue
-                except Exception:
-                    continue
-            
-            if not redirect_selected:
-                self.logger.warning("Konnte 'Umleiten'-Aktion nicht auswählen")
-                # Debug: Liste alle Dropdowns auf
-                all_selects = self.driver.find_elements(By.CSS_SELECTOR, 'select')
-                self.logger.debug(f"Gefundene Select-Elemente: {len(all_selects)}")
-                for i, sel in enumerate(all_selects[:5]):
-                    try:
-                        self.logger.debug(f"  Select {i}: name={sel.get_attribute('name')}, visible={sel.is_displayed()}")
-                    except Exception:
-                        pass
-
-            time.sleep(1.5)
-
-            # Debug-Screenshot nach Auswahl der Aktion
-            try:
-                self.driver.save_screenshot("debug_after_action_select.png")
-            except Exception:
-                pass
-
-            # Finde das E-Mail-Eingabefeld für die Umleitung
-            # Erweiterte Selektoren für das Eingabefeld
-            redirect_input_selectors = [
-                (By.CSS_SELECTOR, 'input[id^="redirect_"]'),
-                (By.CSS_SELECTOR, 'input[name="to"]'),
-                (By.CSS_SELECTOR, 'input[type="email"]'),
-                (By.CSS_SELECTOR, 'input[placeholder*="@"]'),
-                (By.CSS_SELECTOR, 'input[placeholder*="mail"]'),
-                (By.CSS_SELECTOR, 'input[placeholder*="Mail"]'),
-                (By.CSS_SELECTOR, 'input[name*="redirect"]'),
-                (By.CSS_SELECTOR, '.actions input[type="text"]'),
-                (By.CSS_SELECTOR, 'fieldset.actions input[type="text"]'),
-                (By.CSS_SELECTOR, 'fieldset.actions input'),
-                (By.XPATH, "//fieldset[contains(@class, 'actions')]//input[@type='text']"),
-                (By.XPATH, "//input[contains(@placeholder, 'mail') or contains(@placeholder, 'Mail')]"),
-            ]
-            
-            email_field = None
-            for by, selector in redirect_input_selectors:
-                try:
-                    fields = self.driver.find_elements(by, selector)
-                    for field in reversed(fields):  # Von hinten (neueste zuerst)
-                        try:
-                            value = field.get_attribute("value")
-                            if (not value or value.strip() == "") and field.is_displayed() and field.is_enabled():
-                                email_field = field
-                                self.logger.debug(f"E-Mail-Feld gefunden mit: {selector}")
-                                break
-                        except Exception:
-                            continue
-                    if email_field:
+                    elements = self.driver.find_elements(by, selector)
+                    for elem in elements:
+                        if elem.is_displayed():
+                            actions_fieldset = elem
+                            break
+                    if actions_fieldset:
                         break
                 except Exception:
                     continue
 
-            if email_field:
-                self._safe_send_keys(email_field, email)
-                self.logger.debug(f"Umleitungsadresse eingegeben: {email}")
-                return True
-            
-            # Fallback: Versuche alle sichtbaren Text-Inputs
-            self.logger.debug("Versuche Fallback: Alle sichtbaren Text-Inputs durchsuchen")
-            all_inputs = self.driver.find_elements(By.CSS_SELECTOR, 'input[type="text"], input:not([type])')
-            for field in reversed(all_inputs):
+            # Öffne Dropdown-Toggle im Aktionen-Bereich
+            dropdown_opened = False
+            if actions_fieldset:
                 try:
-                    value = field.get_attribute("value")
-                    if (not value or value.strip() == "") and field.is_displayed() and field.is_enabled():
-                        # Prüfe ob es NICHT das Namensfeld ist
-                        field_name = field.get_attribute("name") or ""
-                        field_id = field.get_attribute("id") or ""
-                        if "name" not in field_name.lower() and "rulename" not in field_id.lower():
+                    for toggle in actions_fieldset.find_elements(
+                        By.CSS_SELECTOR, ".dropdown-toggle"
+                    ):
+                        if toggle.is_displayed() and toggle.is_enabled():
+                            self._safe_click(toggle)
+                            dropdown_opened = True
+                            time.sleep(0.5)
+                            break
+                except Exception:
+                    pass
+
+            # Wähle "Umleiten nach" aus dem Dropdown
+            redirect_selected = False
+            for by, selector in [
+                (By.CSS_SELECTOR, 'a[data-value="redirect"]'),
+                (By.XPATH, "//a[contains(text(), 'Umleiten nach')]"),
+            ]:
+                try:
+                    for item in self.driver.find_elements(by, selector):
+                        if item.is_displayed():
+                            self._safe_click(item)
+                            self.logger.debug("'Umleiten nach' ausgewählt")
+                            redirect_selected = True
+                            time.sleep(1)
+                            break
+                    if redirect_selected:
+                        break
+                except Exception:
+                    continue
+
+            if not redirect_selected:
+                self.logger.warning("Konnte 'Umleiten nach' nicht auswählen")
+                self.logger.warning(
+                    "⚠️  Möglicherweise wurde das Strato-Limit von 50 Weiterleitungsregeln erreicht!"
+                )
+                return False
+
+            # Finde E-Mail-Eingabefeld
+            for by, selector in [
+                (By.CSS_SELECTOR, 'input[id^="redirect_"]'),
+                (By.CSS_SELECTOR, 'input[id^="redirect"]'),
+                (By.CSS_SELECTOR, 'li.action input[type="text"]'),
+            ]:
+                try:
+                    for field in reversed(self.driver.find_elements(by, selector)):
+                        value = field.get_attribute("value") or ""
+                        if not value.strip() and field.is_displayed() and field.is_enabled():
                             self._safe_send_keys(field, email)
-                            self.logger.debug(f"Umleitungsadresse eingegeben (Fallback): {email}")
+                            self.logger.debug(f"Umleitungsadresse eingegeben: {email}")
                             return True
                 except Exception:
                     continue
 
-            self.logger.warning("Kein leeres Umleitungsfeld gefunden")
-            # Debug: Liste alle Input-Felder
-            self.logger.debug(f"Alle Input-Felder: {len(all_inputs)}")
-            for i, inp in enumerate(all_inputs[:10]):
-                try:
-                    self.logger.debug(f"  Input {i}: type={inp.get_attribute('type')}, "
-                                    f"name={inp.get_attribute('name')}, "
-                                    f"value='{inp.get_attribute('value')}', "
-                                    f"visible={inp.is_displayed()}")
-                except Exception:
-                    pass
+            self.logger.warning("Kein E-Mail-Feld gefunden")
             return False
 
         except Exception as e:
@@ -1268,10 +1205,8 @@ class StratoSeleniumClient:
     def delete_individual_rule(self, email: str) -> bool:
         """
         Löscht die individuelle Filterregel für eine E-Mail-Adresse.
-        
-        Args:
             email: E-Mail-Adresse deren Regel gelöscht werden soll
-            
+
         Returns:
             True bei Erfolg
         """
@@ -1286,7 +1221,7 @@ class StratoSeleniumClient:
 
             # Finde die Regel in der Liste
             rule_element = None
-            
+
             # Versuche verschiedene Selektoren
             selectors = [
                 f"//li[contains(text(), '{rule_name}')]",
@@ -1294,7 +1229,7 @@ class StratoSeleniumClient:
                 f"//div[contains(text(), '{rule_name}')]/ancestor::li",
                 f"//*[contains(text(), '{rule_name}')]",
             ]
-            
+
             for selector in selectors:
                 elements = self.driver.find_elements(By.XPATH, selector)
                 if elements:
@@ -1318,18 +1253,20 @@ class StratoSeleniumClient:
                 "//button[contains(text(), 'Entfernen')] | "
                 "//button[@data-action='delete'] | "
                 "//button[@aria-label='Löschen'] | "
-                "//button[contains(@class, 'delete')]"
+                "//button[contains(@class, 'delete')]",
             )
 
             if not delete_buttons:
                 # Versuche Kontextmenü
                 try:
                     from selenium.webdriver.common.action_chains import ActionChains
+
                     ActionChains(self.driver).context_click(rule_element).perform()
                     time.sleep(0.5)
-                    
+
                     delete_menu = self.driver.find_elements(
-                        By.XPATH, "//a[contains(text(), 'Löschen')] | //li[contains(text(), 'Löschen')]"
+                        By.XPATH,
+                        "//a[contains(text(), 'Löschen')] | //li[contains(text(), 'Löschen')]",
                     )
                     if delete_menu:
                         self._safe_click(delete_menu[0])
@@ -1352,7 +1289,7 @@ class StratoSeleniumClient:
                     "//button[contains(text(), 'OK')] | "
                     "//button[contains(text(), 'Ja')] | "
                     "//button[contains(text(), 'Bestätigen')] | "
-                    "//button[contains(text(), 'Delete')]"
+                    "//button[contains(text(), 'Delete')]",
                 )
                 if confirm_buttons:
                     self._safe_click(confirm_buttons[0])
