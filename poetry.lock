@@ -1145,21 +1145,21 @@ websocket-client = ">=1.8.0,<2.0"
 
 [[package]]
 name = "sievelib"
-version = "1.4.3"
+version = "1.6.0"
 description = "Client-side SIEVE library"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "sievelib-1.4.3-py3-none-any.whl", hash = "sha256:58e6fb446c47166957816b34fc8a8acc912a0bb3f6aa6cc8fd65fc8f16013783"},
-    {file = "sievelib-1.4.3.tar.gz", hash = "sha256:6c57a65af01ce966c90b13e52f14fbf9a7037767a071b8381474cc5ab23104f4"},
+    {file = "sievelib-1.6.0-py3-none-any.whl", hash = "sha256:6c6f82843db8128b50585c119b3912b0b09c5dc97b3074b251685c3ee4850287"},
+    {file = "sievelib-1.6.0.tar.gz", hash = "sha256:55c11ad3f404aac5ff0f4ec9e0ae354e1d803aed72c44524598d25deac86b0b8"},
 ]
 
 [package.dependencies]
 typing-extensions = "*"
 
 [package.extras]
-dev = ["black", "pre-commit", "pylint", "pytest"]
+dev = ["black", "pre-commit", "pylint", "pytest", "pytest-cov"]
 
 [[package]]
 name = "sniffio"
