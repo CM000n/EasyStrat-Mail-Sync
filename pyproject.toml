@@ -13,7 +13,7 @@ easystrat = "easystrat.cli:cli"
 [tool.poetry.dependencies]
 python = "^3.11"
 click = "^8.1.0"
-python-easyverein = "^2.3.0"
+python-easyverein = "^3.0.0"
 sievelib = "^1.4.0"
 selenium = "^4.15.0"
 webdriver-manager = "^4.0.0"

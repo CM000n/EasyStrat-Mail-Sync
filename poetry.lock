@@ -972,14 +972,14 @@ cli = ["click (>=5.0)"]
 
 [[package]]
 name = "python-easyverein"
-version = "2.3.0"
+version = "3.0.0"
 description = "Python library to interact with the EasyVerein API"
 optional = false
 python-versions = "<4,>=3.11"
 groups = ["main"]
 files = [
-    {file = "python_easyverein-2.3.0-py3-none-any.whl", hash = "sha256:1bd3936141302867c950bd8f739a4a738390172ecc383981ee82861f21d02cb6"},
-    {file = "python_easyverein-2.3.0.tar.gz", hash = "sha256:155dd1b424bac4f4f5b4a8456f6878208a5209ab503167b1b6c20e87f2f22ad4"},
+    {file = "python_easyverein-3.0.0-py3-none-any.whl", hash = "sha256:afab7ce3c0ca87d3b845793714db67f75261b3687597e4b9cd16a455d38eff95"},
+    {file = "python_easyverein-3.0.0.tar.gz", hash = "sha256:a891445eadf81877a8bf241ce93aae60384414100932be03528b1ed7450b372a"},
 ]
 
 [package.dependencies]
@@ -1410,4 +1410,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "6a0679ff956b9a4ba2e235c6601d0b56791af160c7d1782abf84cbbf7aee564b"
+content-hash = "b7a8a8a4fc8d6bdc0a35c0d98372371b43fb9d10907075b4b7190da2021f2446"
